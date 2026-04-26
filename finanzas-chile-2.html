@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finanzas CL">
+<meta name="theme-color" content="#0f172a">
+<title>Finanzas Chile</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #263347;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --green: #10b981;
+  --green-bg: rgba(16,185,129,0.12);
+  --red: #f43f5e;
+  --red-bg: rgba(244,63,94,0.12);
+  --blue: #3b82f6;
+  --blue-bg: rgba(59,130,246,0.12);
+  --gold: #f59e0b;
+  --gold-bg: rgba(245,158,11,0.12);
+  --accent: #6366f1;
+  --accent-bg: rgba(99,102,241,0.15);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  overscroll-behavior: none;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; position: relative; }
+
+header {
+  padding: 16px 20px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-title { font-size: 18px; font-weight: 600; }
+.header-sub { font-size: 11px; color: var(--text3); letter-spacing: .5px; text-transform: uppercase; }
+.header-badge {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid rgba(99,102,241,.3);
+}
+
+.main { flex: 1; overflow-y: auto; padding-bottom: 72px; }
+
+/* ── NAV BAR ── */
+nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 10px 4px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); font-family: var(--font); font-size: 10px; font-weight: 500;
+  transition: color .2s;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { width: 20px; height: 20px; }
+.nav-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); display: none;
+}
+.nav-btn.active .nav-dot { display: block; }
+
+/* ── TABS / PAGES ── */
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+.card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+.card-body { padding: 14px 16px; }
+
+/* ── STAT CARDS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.stat-value { font-family: var(--mono); font-size: 15px; font-weight: 500; }
+.stat-value.green { color: var(--green); }
+.stat-value.red { color: var(--red); }
+.stat-value.blue { color: var(--blue); }
+.stat-icon { font-size: 18px; margin-bottom: 6px; }
+
+/* ── PILL TABS ── */
+.pill-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.pill-tabs::-webkit-scrollbar { display: none; }
+.pill {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; white-space: nowrap; transition: all .15s;
+  font-family: var(--font);
+}
+.pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* ── CHAT / ASSISTANT ── */
+.chat-wrap { display: flex; flex-direction: column; height: calc(100dvh - 140px); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.msg { display: flex; max-width: 88%; }
+.msg.user { align-self: flex-end; }
+.msg.bot { align-self: flex-start; }
+.bubble {
+  padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5;
+}
+.msg.user .bubble { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+.msg.bot .bubble { background: var(--surface2); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+.msg.bot.success .bubble { background: var(--green-bg); border-color: rgba(16,185,129,.3); }
+.msg.bot.error .bubble { background: var(--red-bg); border-color: rgba(244,63,94,.3); }
+
+.chat-input-area {
+  padding: 12px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: center;
+}
+.chat-input {
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px; padding: 10px 16px; color: var(--text);
+  font-family: var(--font); font-size: 14px; outline: none;
+  transition: border-color .2s;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-input::placeholder { color: var(--text3); }
+.icon-btn {
+  width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all .15s; font-family: var(--font);
+}
+.icon-btn.send { background: var(--accent); color: white; }
+.icon-btn.send:disabled { background: var(--surface2); color: var(--text3); }
+.icon-btn.mic { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.icon-btn.mic.listening { background: var(--red); color: white; animation: pulse 1s infinite; }
+.tip { font-size: 11px; color: var(--text3); text-align: center; padding: 6px 16px; }
+
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+/* ── TRANSACTIONS ── */
+.tx-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.tx-item:last-child { border-bottom: none; }
+.tx-icon {
+  width: 38px; height: 38px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.tx-info { flex: 1; min-width: 0; }
+.tx-desc { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.tx-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+  background: var(--blue-bg); color: var(--blue); margin-left: 4px;
+}
+.tx-amount { font-family: var(--mono); font-size: 14px; font-weight: 500; text-align: right; }
+.tx-amount.income { color: var(--green); }
+.tx-amount.expense { color: var(--red); }
+.tx-delete {
+  background: none; border: none; cursor: pointer; color: var(--text3);
+  padding: 6px; border-radius: 8px; transition: all .15s;
+  display: flex; align-items: center;
+}
+.tx-delete:hover { background: var(--red-bg); color: var(--red); }
+
+/* ── TASKS ── */
+.task-add { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.input-field {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; color: var(--text); font-family: var(--font); font-size: 14px; outline: none;
+  transition: border-color .2s; width: 100%;
+}
+.input-field:focus { border-color: var(--accent); }
+.input-field::placeholder { color: var(--text3); }
+.input-row { display: flex; gap: 8px; }
+.btn {
+  background: var(--accent); color: white; border: none; border-radius: var(--radius-sm);
+  padding: 11px 16px; font-family: var(--font); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: opacity .15s; white-space: nowrap;
+}
+.btn:hover { opacity: .85; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+
+.task-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 8px; transition: opacity .2s;
+}
+.task-item.done { opacity: .55; }
+.task-check {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border);
+  background: none; cursor: pointer; flex-shrink: 0; transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.task-check.checked { background: var(--green); border-color: var(--green); }
+.task-text { flex: 1; font-size: 14px; }
+.task-text.done { text-decoration: line-through; color: var(--text3); }
+.task-due { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.section-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin: 14px 0 8px; }
+
+/* ── IVA CALC ── */
+.iva-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+.iva-tab {
+  padding: 10px; text-align: center; font-size: 13px; font-weight: 500;
+  background: var(--surface2); color: var(--text2); cursor: pointer; border: none; font-family: var(--font);
+  transition: all .15s;
+}
+.iva-tab.active { background: var(--accent); color: white; }
+.iva-result {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;
+}
+.iva-row { display: flex; justify-content: space-between; font-size: 14px; }
+.iva-row.total { font-weight: 600; border-top: 1px solid var(--border); padding-top: 8px; }
+.iva-row .lbl { color: var(--text2); }
+.iva-row .val { font-family: var(--mono); }
+
+/* ── CHARTS ── */
+.chart-wrap { height: 220px; position: relative; margin: 8px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 18px; font-size: 13px; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4); opacity: 0; transition: all .3s;
+  z-index: 200; white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: rgba(16,185,129,.4); color: var(--green); }
+.toast.error { border-color: rgba(244,63,94,.4); color: var(--red); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── ANIMATIONS ── */
+.page.active { animation: fadeUp .2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="header-title">💰 Finanzas Chile</div>
+      <div class="header-sub">Personal &amp; Negocio</div>
+    </div>
+    <div class="header-badge" id="saldoBadge">$0</div>
+  </header>
+
+  <main class="main">
+    <!-- ASISTENTE -->
+    <div class="page active" id="page-assistant">
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <button class="icon-btn mic" id="micBtn" onclick="toggleMic()" title="Voz">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <input class="chat-input" id="chatInput" placeholder="Ej: gasté 5000 en pan..." onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="icon-btn send" id="sendBtn" onclick="sendMsg()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="tip">✨ Asistente IA para finanzas chilenas</div>
+      </div>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="page" id="page-summary">
+      <div class="pill-tabs">
+        <button class="pill active" onclick="setSummaryTab('total',this)">🌐 Total</button>
+        <button class="pill" onclick="setSummaryTab('personal',this)">👤 Personal</button>
+        <button class="pill" onclick="setSummaryTab('negocio',this)">💼 Negocio</button>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Historial</div></div>
+        <div class="card-body" id="txList"></div>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="page" id="page-charts">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><div class="card-title">Ingresos vs Gastos</div></div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Gastos por Categoría</div></div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+          <div class="legend" id="pieLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAREAS -->
+    <div class="page" id="page-tasks">
+      <div class="task-add">
+        <input class="input-field" id="taskInput" placeholder="Nueva tarea..." onkeydown="if(event.key==='Enter')addTask()">
+        <div class="input-row">
+          <input class="input-field" type="date" id="taskDate" style="flex:1">
+          <button class="btn" onclick="addTask()">+ Agregar</button>
+        </div>
+      </div>
+      <div id="taskPending"></div>
+      <div id="taskDone"></div>
+    </div>
+
+    <!-- IVA -->
+    <div class="page" id="page-iva">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🧮 Calculadora IVA 19%</div></div>
+        <div class="card-body">
+          <div class="iva-tabs">
+            <button class="iva-tab active" onclick="setIvaTab('neto',this)">Neto → Total</button>
+            <button class="iva-tab" onclick="setIvaTab('total',this)">Total → Neto</button>
+          </div>
+          <div id="ivaNetoPanel">
+            <input class="input-field" id="ivaNetoInput" type="number" inputmode="numeric" placeholder="Monto neto (ej: 100000)" oninput="calcIva()">
+          </div>
+          <div id="ivaTotalPanel" style="display:none">
+            <input class="input-field" id="ivaTotalInput" type="number" inputmode="numeric" placeholder="Monto total con IVA (ej: 119000)" oninput="calcIvaRev()">
+          </div>
+          <div class="iva-result" id="ivaResult" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav>
+    <button class="nav-btn active" onclick="showPage('assistant',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Asistente
+    </button>
+    <button class="nav-btn" onclick="showPage('summary',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      Resumen
+    </button>
+    <button class="nav-btn" onclick="showPage('charts',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Gráficos
+    </button>
+    <button class="nav-btn" onclick="showPage('tasks',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Tareas
+    </button>
+    <button class="nav-btn" onclick="showPage('iva',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      IVA
+    </button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+const STORAGE_KEY = 'finanzas-chile-v1';
+let state = { transactions: [], tasks: [] };
+let barChartInst = null, pieChartInst = null;
+let summaryTab = 'total';
+let ivaMode = 'neto';
+let isListening = false;
+let recognition = null;
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if(s) state = JSON.parse(s); } catch(e){}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
+
+// ── FORMAT ──
+function clp(n) {
+  return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(n);
+}
+
+// ── NAVIGATION ──
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='summary') renderSummary();
+  if(name==='charts') renderCharts();
+  if(name==='tasks') renderTasks();
+}
+
+// ── TOAST ──
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(()=>{ t.className='toast'; }, 2800);
+}
+
+// ── PARSER ──
+const GASTO_KW = ['gasté','gaste','pagué','pague','compré','compre','invertí','inverti','perdí','perdi'];
+const INGRESO_KW = ['gané','gane','vendí','vendi','recibí','recibi','cobré','cobre','me pagaron','ingresé','ingrese','facturé','facture'];
+const CAT_KW = {
+  comida: ['pan','comida','almuerzo','cena','desayuno','super','supermercado','verduras','frutas','carne','pollo','pescado','bebida','agua','cafe','café','restaurant','delivery','rappi','uber eats','pedidos ya','mercado','panadería'],
+  transporte: ['bencina','gasolina','metro','micro','bus','taxi','uber','didi','cabify','transporte','estacionamiento','peaje','tag','combustible'],
+  negocio: ['producto','productos','mercadería','mercaderia','servicio','cliente','venta','ventas','factura','boleta','negocio','trabajo','proyecto','oficina'],
+  gastos_fijos: ['luz','agua','gas','arriendo','alquiler','internet','telefono','teléfono','celular','seguro','cuota','credito','crédito','deuda','mensualidad','streaming','spotify','netflix'],
+  ingresos: ['sueldo','salario','pago','transferencia','depósito','deposito','ingreso','ganancia','venta','honorarios'],
+};
+const CAT_EMOJI = { comida:'🍔', transporte:'🚗', negocio:'💼', gastos_fijos:'🏠', ingresos:'💵' };
+const CAT_LABEL = { comida:'Comida', transporte:'Transporte', negocio:'Negocio', gastos_fijos:'Gastos Fijos', ingresos:'Ingresos' };
+
+function extractAmount(text) {
+  const lower = text.toLowerCase();
+  const patterns = [/\$?\s*([\d.]+(?:,\d{3})*)\s*(?:pesos|clp)?/gi, /([\d]+(?:[.,]\d{3})*)\s*(?:pesos|clp|lucas?)?/gi];
+  for(const p of patterns) {
+    for(const m of lower.matchAll(p)) {
+      let n = m[1].replace(/\./g,'').replace(/,/g,'');
+      const num = parseInt(n,10);
+      if(num>0 && num<1e9) {
+        if(lower.includes('luca')) return num*1000;
+        return num;
+      }
+    }
+  }
+  return null;
+}
+
+function parse(text) {
+  const lower = text.toLowerCase();
+  const amount = extractAmount(text);
+  if(!amount) return { ok:false, msg:'No detecté el monto. Ej: "gasté 5000 en pan"' };
+
+  let type = 'gasto';
+  for(const k of INGRESO_KW) if(lower.includes(k)) { type='ingreso'; break; }
+  if(type==='gasto') for(const k of GASTO_KW) if(lower.includes(k)) break;
+
+  let category = type==='ingreso' ? 'ingresos' : 'comida';
+  outer: for(const [cat,kws] of Object.entries(CAT_KW)) {
+    if(cat==='ingresos') continue;
+    for(const kw of kws) if(lower.includes(kw)) { category=cat; break outer; }
+  }
+  if(type==='ingreso' && category!=='ingresos') {
+    const busKws=['negocio','empresa','cliente','factura','boleta','venta','servicio'];
+    if(!busKws.some(k=>lower.includes(k))) category='ingresos';
+  }
+
+  let financeType = 'personal';
+  const bizKws=['negocio','empresa','cliente','factura','boleta','venta','producto','servicio','trabajo'];
+  if(bizKws.some(k=>lower.includes(k)) || category==='negocio') financeType='negocio';
+
+  const includeIva = financeType==='negocio' && (lower.includes('iva')||lower.includes('factura')||lower.includes('boleta'));
+
+  let desc = text;
+  [...GASTO_KW,...INGRESO_KW,'en','por','de','con','iva'].forEach(w=>{
+    desc = desc.replace(new RegExp(`\\b${w}\\b`,'gi'),'');
+  });
+  desc = desc.replace(/\$?\s*[\d.,]+\s*(?:pesos|clp|lucas?)?/gi,'').replace(/\s+/g,' ').trim() || text.substring(0,50);
+
+  let neto = amount, iva = 0;
+  if(includeIva) { neto=Math.round(amount/1.19); iva=amount-neto; }
+
+  const tx = { id:genId(), description:desc, amount, category, type, financeType, date:new Date().toISOString(), neto:includeIva?neto:undefined, iva:includeIva?iva:undefined };
+  state.transactions.unshift(tx);
+  saveState();
+
+  const sign = type==='ingreso' ? '+' : '-';
+  return { ok:true, msg:`${CAT_EMOJI[category]} ${type==='ingreso'?'Ingreso':'Gasto'} registrado: ${sign}${clp(amount)} en ${CAT_LABEL[category]}${financeType==='negocio'?' (Negocio)':''}` };
+}
+
+// ── CHAT ──
+function addBotMsg(text, type='') {
+  const div = document.createElement('div');
+  div.className = 'msg bot ' + type;
+  div.innerHTML = `<div class="bubble">${text}</div>`;
+  const msgs = document.getElementById('chatMessages');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function addUserMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="bubble">${text}</div>`;
+  const msgs = document.getElementById('chatMessages');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  addUserMsg(text);
+  input.value = '';
+  const result = parse(text);
+  setTimeout(()=>{ addBotMsg(result.msg, result.ok ? 'success' : 'error'); updateBadge(); }, 300);
+}
+
+// welcome message
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadState();
+  updateBadge();
+  renderSummary();
+  addBotMsg('¡Hola! 👋 Soy tu asistente financiero.<br><br>Puedes decirme cosas como:<br>• "gasté 5000 en pan"<br>• "vendí 20000 en productos"<br>• "pagué 150000 de arriendo"<br>• "cobré 500000 de sueldo"<br><br>También puedes hablar con el micrófono 🎙️');
+});
+
+// ── VOICE ──
+function toggleMic() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition) { toast('Tu navegador no soporta voz','error'); return; }
+  if(isListening) {
+    recognition && recognition.stop();
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'es-CL';
+  recognition.interimResults = false;
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('chatInput').value = t;
+    sendMsg();
+  };
+  recognition.onend = ()=>{ isListening=false; document.getElementById('micBtn').classList.remove('listening'); };
+  recognition.onerror = ()=>{ isListening=false; document.getElementById('micBtn').classList.remove('listening'); toast('No se pudo escuchar','error'); };
+  recognition.start();
+  isListening = true;
+  document.getElementById('micBtn').classList.add('listening');
+}
+
+// ── SUMMARY ──
+function updateBadge() {
+  const total = calcTotals(state.transactions);
+  document.getElementById('saldoBadge').textContent = clp(total.saldo);
+}
+
+function calcTotals(txs, ft) {
+  const f = ft ? txs.filter(t=>t.financeType===ft) : txs;
+  const ing = f.filter(t=>t.type==='ingreso').reduce((s,t)=>s+t.amount,0);
+  const gas = f.filter(t=>t.type==='gasto').reduce((s,t)=>s+t.amount,0);
+  return { ingresos:ing, gastos:gas, saldo:ing-gas };
+}
+
+function setSummaryTab(tab, btn) {
+  summaryTab = tab;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  renderSummary();
+}
+
+function renderSummary() {
+  const ft = summaryTab==='total' ? null : summaryTab;
+  const t = calcTotals(state.transactions, ft);
+
+  const saldoClass = t.saldo >= 0 ? 'green' : 'red';
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Ingresos</div><div class="stat-value green">${clp(t.ingresos)}</div></div>
+    <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-label">Gastos</div><div class="stat-value red">${clp(t.gastos)}</div></div>
+    <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-label">Saldo</div><div class="stat-value ${saldoClass}">${clp(t.saldo)}</div></div>
+  `;
+
+  const txs = ft ? state.transactions.filter(t=>t.financeType===ft) : state.transactions;
+  const list = document.getElementById('txList');
+  if(!txs.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sin transacciones. Usa el asistente para agregar.</div></div>';
+    return;
+  }
+  list.innerHTML = txs.slice(0,30).map(tx=>`
+    <div class="tx-item">
+      <div class="tx-icon" style="background:${tx.type==='ingreso'?'var(--green-bg)':'var(--red-bg)'}">
+        ${CAT_EMOJI[tx.category]||'💰'}
+      </div>
+      <div class="tx-info">
+        <div class="tx-desc">${tx.description||'Transacción'}
+          ${tx.financeType==='negocio'?'<span class="tx-badge">Negocio</span>':''}
+        </div>
+        <div class="tx-meta">${CAT_LABEL[tx.category]||tx.category} · ${new Date(tx.date).toLocaleDateString('es-CL')}
+          ${tx.iva?` · IVA: ${clp(tx.iva)}`:''}
+        </div>
+      </div>
+      <div>
+        <div class="tx-amount ${tx.type==='ingreso'?'income':'expense'}">${tx.type==='ingreso'?'+':'-'}${clp(tx.amount)}</div>
+        <button class="tx-delete" onclick="deleteTx('${tx.id}')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteTx(id) {
+  state.transactions = state.transactions.filter(t=>t.id!==id);
+  saveState(); updateBadge(); renderSummary(); toast('Transacción eliminada');
+}
+
+// ── CHARTS ──
+const CHART_COLORS = ['#f97316','#06b6d4','#8b5cf6','#eab308','#22c55e','#f43f5e','#3b82f6'];
+
+function renderCharts() {
+  const gastos = state.transactions.filter(t=>t.type==='gasto');
+  const byCat = {};
+  gastos.forEach(t=>{ byCat[t.category]=(byCat[t.category]||0)+t.amount; });
+  const pieData = Object.entries(byCat).map(([c,a],i)=>({ label:CAT_LABEL[c]||c, value:a, color:CHART_COLORS[i%CHART_COLORS.length] }));
+
+  const totals = calcTotals(state.transactions);
+
+  // Bar chart
+  if(barChartInst) barChartInst.destroy();
+  barChartInst = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Ingresos','Gastos'],
+      datasets: [{ data:[totals.ingresos, totals.gastos], backgroundColor:['rgba(16,185,129,.7)','rgba(244,63,94,.7)'], borderRadius:8, borderSkipped:false }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales: {
+        x:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#94a3b8'} },
+        y:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#94a3b8', callback:v=>`$${(v/1000).toFixed(0)}k`} }
+      }
+    }
+  });
+
+  // Pie chart
+  if(pieChartInst) pieChartInst.destroy();
+  if(!pieData.length) {
+    document.getElementById('pieLegend').innerHTML='<div style="color:var(--text3);font-size:13px">Sin gastos registrados</div>';
+    return;
+  }
+  pieChartInst = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: pieData.map(d=>d.label),
+      datasets: [{ data:pieData.map(d=>d.value), backgroundColor:pieData.map(d=>d.color), borderWidth:2, borderColor:'#1e293b' }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=>`${ctx.label}: ${clp(ctx.raw)}` } }
+      },
+      cutout:'55%'
+    }
+  });
+
+  document.getElementById('pieLegend').innerHTML = pieData.map(d=>`
+    <div class="legend-item"><div class="legend-dot" style="background:${d.color}"></div>${d.label}</div>
+  `).join('');
+}
+
+// ── TASKS ──
+function addTask() {
+  const title = document.getElementById('taskInput').value.trim();
+  if(!title) return;
+  const dueDate = document.getElementById('taskDate').value || undefined;
+  state.tasks.unshift({ id:genId(), title, completed:false, dueDate, createdAt:new Date().toISOString() });
+  saveState();
+  document.getElementById('taskInput').value='';
+  document.getElementById('taskDate').value='';
+  renderTasks();
+  toast('Tarea agregada ✓','success');
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(t=>t.id===id);
+  if(t) { t.completed=!t.completed; saveState(); renderTasks(); }
+}
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(t=>t.id!==id);
+  saveState(); renderTasks(); toast('Tarea eliminada');
+}
+
+function renderTasks() {
+  const pending = state.tasks.filter(t=>!t.completed);
+  const done = state.tasks.filter(t=>t.completed);
+
+  const renderList = (tasks) => tasks.map(t=>`
+    <div class="task-item ${t.completed?'done':''}">
+      <button class="task-check ${t.completed?'checked':''}" onclick="toggleTask('${t.id}')">
+        ${t.completed?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+      </button>
+      <div style="flex:1;min-width:0">
+        <div class="task-text ${t.completed?'done':''}">${t.title}</div>
+        ${t.dueDate?`<div class="task-due">📅 ${new Date(t.dueDate+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'long'})}</div>`:''}
+      </div>
+      <button class="tx-delete" onclick="deleteTask('${t.id}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </button>
+    </div>
+  `).join('');
+
+  document.getElementById('taskPending').innerHTML = `
+    <div class="section-label">Pendientes (${pending.length})</div>
+    ${pending.length ? renderList(pending) : '<div class="empty" style="padding:20px"><div class="empty-icon">✅</div><div class="empty-text">Todo al día</div></div>'}
+  `;
+  document.getElementById('taskDone').innerHTML = done.length ? `
+    <div class="section-label">Completadas (${done.length})</div>
+    ${renderList(done.slice(0,10))}
+  ` : '';
+}
+
+// ── IVA ──
+function setIvaTab(mode, btn) {
+  ivaMode = mode;
+  document.querySelectorAll('.iva-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ivaNetoPanel').style.display = mode==='neto'?'block':'none';
+  document.getElementById('ivaTotalPanel').style.display = mode==='total'?'block':'none';
+  document.getElementById('ivaResult').style.display = 'none';
+}
+
+function calcIva() {
+  const n = parseFloat(document.getElementById('ivaNetoInput').value)||0;
+  if(!n) { document.getElementById('ivaResult').style.display='none'; return; }
+  const iva = Math.round(n*0.19), total = n+iva;
+  showIvaResult(n, iva, total);
+}
+function calcIvaRev() {
+  const t = parseFloat(document.getElementById('ivaTotalInput').value)||0;
+  if(!t) { document.getElementById('ivaResult').style.display='none'; return; }
+  const n = Math.round(t/1.19), iva = t-n;
+  showIvaResult(n, iva, t);
+}
+function showIvaResult(neto, iva, total) {
+  const r = document.getElementById('ivaResult');
+  r.style.display='flex';
+  r.innerHTML=`
+    <div class="iva-row"><span class="lbl">Neto</span><span class="val">${clp(neto)}</span></div>
+    <div class="iva-row"><span class="lbl">IVA (19%)</span><span class="val" style="color:var(--gold)">${clp(iva)}</span></div>
+    <div class="iva-row total"><span class="lbl">Total</span><span class="val" style="color:var(--green)">${clp(total)}</span></div>
+  `;
+}
+</script>
+</body>
+</html>
